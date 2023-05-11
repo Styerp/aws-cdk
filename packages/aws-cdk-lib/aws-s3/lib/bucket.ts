@@ -2125,14 +2125,12 @@ export class Bucket extends BucketBase {
     if (!props.serverAccessLogsBucket && !props.serverAccessLogsPrefix) {
       return undefined;
     }
-
     if (
-      // KMS can't be used for logging since the logging service can't use the key - logs don't write
-      // KMS_MANAGED can't be used for logging since the account can't access the logging service key - account can't read logs
-      (!props.serverAccessLogsBucket && (
+      // The current bucket is being used and is configured for default SSE-KMS
+      !props.serverAccessLogsBucket && (
         props.encryptionKey ||
-        props.encryption === BucketEncryption.KMS_MANAGED ||
-        props.encryption === BucketEncryption.KMS )) ||
+        props.encryption === BucketEncryption.KMS ||
+        props.encryption === BucketEncryption.KMS_MANAGED) ||
       // Another bucket is being used that is configured for default SSE-KMS
       props.serverAccessLogsBucket?.encryptionKey
     ) {

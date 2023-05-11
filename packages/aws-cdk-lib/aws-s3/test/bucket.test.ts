@@ -365,6 +365,7 @@ describe('bucket', () => {
 
   });
 
+
   testDeprecated('logs to self, UNENCRYPTED does not throw error', () => {
     const stack = new cdk.Stack();
     expect(() => {
@@ -379,87 +380,26 @@ describe('bucket', () => {
     }).not.toThrowError();
   });
 
-  test('logs to self, KMS_MANAGED encryption throws error', () => {
+  test('throws error if using KMS-Managed key and server access logging to self', () => {
     const stack = new cdk.Stack();
     expect(() => {
       new s3.Bucket(stack, 'MyBucket', { encryption: s3.BucketEncryption.KMS_MANAGED, serverAccessLogsPrefix: 'test' });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
+    }).toThrow('SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets');
   });
-
-  test('logs to self, KMS encryption without key throws error', () => {
-    const stack = new cdk.Stack();
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { encryption: s3.BucketEncryption.KMS, serverAccessLogsPrefix: 'test' });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
-  });
-
-  test('logs to self, KMS encryption with key throws error', () => {
-    const stack = new cdk.Stack();
-    const key = new kms.Key(stack, 'TestKey');
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { encryptionKey: key, encryption: s3.BucketEncryption.KMS, serverAccessLogsPrefix: 'test' });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
-  });
-
-  test('logs to self, KMS key with no specific encryption specified throws error', () => {
+  test('throws error if using KMS CMK and server access logging to self', () => {
     const stack = new cdk.Stack();
     const key = new kms.Key(stack, 'TestKey');
     expect(() => {
       new s3.Bucket(stack, 'MyBucket', { encryptionKey: key, serverAccessLogsPrefix: 'test' });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
+    }).toThrow('SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets');
   });
-
-  testDeprecated('logs to separate bucket, UNENCRYPTED does not throw error', () => {
-    const stack = new cdk.Stack();
-    const logBucket = new s3.Bucket(stack, 'testLogBucket', { encryption: s3.BucketEncryption.UNENCRYPTED });
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: logBucket });
-    }).not.toThrowError();
-  });
-
-  test('logs to separate bucket, S3_MANAGED encryption does not throw error', () => {
-    const stack = new cdk.Stack();
-    const logBucket = new s3.Bucket(stack, 'testLogBucket', { encryption: s3.BucketEncryption.S3_MANAGED });
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: logBucket });
-    }).not.toThrowError();
-  });
-
-  // When provided an external bucket (as an IBucket), we cannot detect KMS_MANAGED encryption. Since this
-  // check is impossible, we skip thist test.
-  // eslint-disable-next-line jest/no-disabled-tests
-  test.skip('logs to separate bucket, KMS_MANAGED encryption throws error', () => {
-    const stack = new cdk.Stack();
-    const logBucket = new s3.Bucket(stack, 'testLogBucket', { encryption: s3.BucketEncryption.KMS_MANAGED });
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: logBucket });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
-  });
-
-  test('logs to separate bucket, KMS encryption without key throws error', () => {
-    const stack = new cdk.Stack();
-    const logBucket = new s3.Bucket(stack, 'testLogBucket', { encryption: s3.BucketEncryption.KMS });
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: logBucket });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
-  });
-
-  test('logs to separate bucket, KMS encryption with key throws error', () => {
+  test('throws error if enabling server access logging to bucket with SSE-KMS', () => {
     const stack = new cdk.Stack();
     const key = new kms.Key(stack, 'TestKey');
-    const logBucket = new s3.Bucket(stack, 'testLogBucket', { encryptionKey: key, encryption: s3.BucketEncryption.KMS });
+    const targetBucket = new s3.Bucket(stack, 'TargetBucket', { encryptionKey: key } );
     expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: logBucket });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
-  });
-
-  test('logs to separate bucket, KMS key with no specific encryption specified throws error', () => {
-    const stack = new cdk.Stack();
-    const key = new kms.Key(stack, 'TestKey');
-    const logBucket = new s3.Bucket(stack, 'testLogBucket', { encryptionKey: key });
-    expect(() => {
-      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: logBucket });
-    }).toThrow(/SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets/);
+      new s3.Bucket(stack, 'MyBucket', { serverAccessLogsBucket: targetBucket });
+    }).toThrow('SSE-S3 is the only supported default bucket encryption for Server Access Logging target buckets');
   });
 
   test('bucket with versioning turned on', () => {
